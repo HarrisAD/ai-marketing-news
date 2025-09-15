@@ -1,0 +1,19 @@
+{
+  "newsletter_id": "2025-09-08",
+  "generated_date": "2025-09-15T15:05:11.674484",
+  "stories_used": [
+    "2025-09-15_anthropic.com_686f00ae",
+    "2025-09-15_anthropic.com_7a08dcd8",
+    "2025-09-15_anthropic.com_c8432cfb",
+    "2025-09-15_microsoft.com_a68aa199",
+    "2025-09-15_microsoft.com_1b18fdd3",
+    "2025-09-15_meta.com_28a75791"
+  ],
+  "story_count": 6,
+  "metadata": {
+    "date_from": "2025-09-08T00:00:00",
+    "date_to": "2025-09-15T23:59:59",
+    "min_score": 80,
+    "editorial_instructions": ""
+  }
+}

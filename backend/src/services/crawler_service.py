@@ -61,19 +61,40 @@ class CrawlerService:
             
             for i, story in enumerate(raw_stories, 1):
                 try:
+                    # Skip stories that already have scores (avoid re-scoring)
+                    if story.get('score') is not None:
+                        logger.info(f"Story {i}/{len(raw_stories)} already scored: {story.get('title', 'Unknown')[:50]}...")
+                        scored_stories.append(story)
+                        continue
+                    
                     logger.info(f"Scoring story {i}/{len(raw_stories)}: {story.get('title', 'Unknown')[:50]}...")
                     scored_story = self.llm_service.score_story(story)
                     scored_stories.append(scored_story)
                 except Exception as e:
                     logger.error(f"Failed to score story {i}: {e}")
-                    # Add story with default scores
-                    story.update({
-                        'score': 0,
-                        'marketer_relevance': [],
-                        'action_hint': '',
-                        'tags': []
-                    })
-                    scored_stories.append(story)
+                    # Check if it's a rate limit error
+                    if "rate_limit_exceeded" in str(e) or "429" in str(e):
+                        logger.warning("Rate limit reached - stopping scoring process")
+                        # Add remaining stories with default scores
+                        for remaining_story in raw_stories[i-1:]:
+                            if remaining_story.get('score') is None:
+                                remaining_story.update({
+                                    'score': 0,
+                                    'marketer_relevance': [],
+                                    'action_hint': '',
+                                    'tags': []
+                                })
+                            scored_stories.append(remaining_story)
+                        break
+                    else:
+                        # Add story with default scores for other errors
+                        story.update({
+                            'score': 0,
+                            'marketer_relevance': [],
+                            'action_hint': '',
+                            'tags': []
+                        })
+                        scored_stories.append(story)
             
             logger.info(f"✅ Scored {len(scored_stories)} stories")
             
