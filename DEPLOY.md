@@ -1,18 +1,28 @@
-# 🚀 One-Click Deployment Guide
+# 🚀 Railway Deployment Guide
 
-## Deploy to Railway (Recommended)
+## Deploy to Railway (Recommended - FREE)
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/deploy?referrer=github&template=https://github.com/HarrisAD/ai-marketing-news)
+### Step-by-Step Setup (3 minutes):
 
-### Quick Setup (3 minutes):
+1. **Go to [Railway.app](https://railway.app)** and sign up (free)
 
-1. **Click the deploy button above**
-2. **Connect your GitHub account** (Railway will fork this repo)
-3. **Add environment variables**:
-   - `OPENAI_API_KEY`: Get from https://platform.openai.com/api-keys
-   - `PORT`: `8000` (Railway will auto-set this)
-4. **Click "Deploy"**
-5. **Wait 3-5 minutes** for build and deployment
+2. **Create New Project**:
+   - Click **"New Project"**
+   - Select **"Deploy from GitHub repo"**
+   - Click **"Configure GitHub App"** if needed
+
+3. **Select Repository**:
+   - Find and select: **`HarrisAD/ai-marketing-news`**
+   - Click **"Deploy Now"**
+
+4. **Add Environment Variables**:
+   - Go to your project → **"Variables"** tab
+   - Add: `OPENAI_API_KEY` = your API key from [OpenAI](https://platform.openai.com/api-keys)
+   - Railway auto-sets `PORT` for you
+
+5. **Wait for Deployment** (3-5 minutes)
+   - Watch the build logs
+   - Get your live URL when complete
 
 Your AI Marketing News System will be live at: `https://yourapp.up.railway.app`
 
