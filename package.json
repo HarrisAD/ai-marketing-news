@@ -1,0 +1,21 @@
+{
+  "name": "ai-marketing-news",
+  "version": "1.0.0",
+  "description": "AI Marketing News System - Automated news monitoring and newsletter generation",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd backend/src && python -m uvicorn main:app --host 0.0.0.0 --port $PORT",
+    "install-backend": "cd backend && pip install -r requirements.txt",
+    "install-frontend": "cd frontend && npm install",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend/src && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:frontend": "cd frontend && npm run dev"
+  },
+  "keywords": ["ai", "marketing", "news", "newsletter", "automation"],
+  "author": "AI Marketing News System",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.8.0"
+  }
+}

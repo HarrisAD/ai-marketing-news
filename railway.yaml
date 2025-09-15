@@ -1,0 +1,22 @@
+build:
+  builder: nixpacks
+deploy:
+  healthcheckPath: "/api/stats"
+  healthcheckTimeout: 300
+  restartPolicyType: "on-failure"
+  restartPolicyMaxRetries: 10
+environments:
+  production:
+    variables:
+      OPENAI_API_KEY: ${{OPENAI_API_KEY}}
+      OPENAI_MODEL: "gpt-4o-mini"
+      PORT: ${{PORT}}
+      HOST: "0.0.0.0"
+      RUN_SOURCES: "openai.com,anthropic.com,microsoft.com,google.com,meta.com"
+      CRON_TIME: "08:30"
+      MIN_SCORE_DEFAULT: "60"
+      TIMEZONE: "Europe/London"
+      DATA_DIR: "./data"
+      LOGS_DIR: "./logs"
+      CRAWLER_DAYS_BACK: "7"
+      MAX_STORIES_PER_SOURCE: "20"
