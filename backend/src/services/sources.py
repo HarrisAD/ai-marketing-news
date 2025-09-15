@@ -89,6 +89,72 @@ NEWS_SOURCES = {
         name="MIT Technology Review",
         rss_urls=["https://www.technologyreview.com/topicai/feed/"],
         fallback_urls=["https://www.technologyreview.com/topic/artificial-intelligence/"]
+    ),
+    "techcrunch.com": NewsSource(
+        domain="techcrunch.com",
+        name="TechCrunch AI",
+        rss_urls=["https://techcrunch.com/category/artificial-intelligence/feed/"],
+        fallback_urls=["https://techcrunch.com/category/artificial-intelligence/"]
+    ),
+    "venturebeat.com": NewsSource(
+        domain="venturebeat.com", 
+        name="VentureBeat AI",
+        rss_urls=["https://venturebeat.com/ai/feed/"],
+        fallback_urls=["https://venturebeat.com/ai/"]
+    ),
+    "theverge.com": NewsSource(
+        domain="theverge.com",
+        name="The Verge AI",
+        rss_urls=["https://www.theverge.com/ai-artificial-intelligence/rss/index.xml"],
+        fallback_urls=["https://www.theverge.com/ai-artificial-intelligence"]
+    ),
+    "wired.com": NewsSource(
+        domain="wired.com",
+        name="Wired AI",
+        rss_urls=["https://www.wired.com/feed/tag/ai/latest/rss"],
+        fallback_urls=["https://www.wired.com/tag/artificial-intelligence/"]
+    ),
+    "hubspot.com": NewsSource(
+        domain="hubspot.com",
+        name="HubSpot AI",
+        rss_urls=["https://blog.hubspot.com/marketing/topic/artificial-intelligence/rss.xml"],
+        fallback_urls=["https://blog.hubspot.com/marketing/topic/artificial-intelligence"]
+    ),
+    "salesforce.com": NewsSource(
+        domain="salesforce.com",
+        name="Salesforce AI",
+        rss_urls=["https://www.salesforce.com/news/rss/"],
+        fallback_urls=["https://www.salesforce.com/news/", "https://www.salesforce.com/products/einstein/"]
+    ),
+    "adobe.com": NewsSource(
+        domain="adobe.com",
+        name="Adobe AI",
+        rss_urls=[],
+        fallback_urls=["https://blog.adobe.com/en/topics/artificial-intelligence"]
+    ),
+    "nvidia.com": NewsSource(
+        domain="nvidia.com", 
+        name="NVIDIA AI",
+        rss_urls=["https://blogs.nvidia.com/feed/"],
+        fallback_urls=["https://blogs.nvidia.com/blog/category/deep-learning/"]
+    ),
+    "deepmind.google": NewsSource(
+        domain="deepmind.google",
+        name="Google DeepMind",
+        rss_urls=[],
+        fallback_urls=["https://deepmind.google/discover/blog/"]
+    ),
+    "huggingface.co": NewsSource(
+        domain="huggingface.co",
+        name="Hugging Face",
+        rss_urls=[],
+        fallback_urls=["https://huggingface.co/blog"]
+    ),
+    "aws.amazon.com": NewsSource(
+        domain="aws.amazon.com",
+        name="AWS AI/ML",
+        rss_urls=["https://aws.amazon.com/blogs/machine-learning/feed/"],
+        fallback_urls=["https://aws.amazon.com/blogs/machine-learning/"]
     )
 }
 
@@ -147,6 +213,12 @@ class NewsCrawler:
         self.days_back = days_back
         self.max_stories_per_source = max_stories_per_source
         self.cutoff_date = datetime.now() - timedelta(days=days_back)
+        
+    def get_configured_sources(self) -> List[str]:
+        """Get list of configured source domains from environment"""
+        from services.config import settings
+        run_sources = getattr(settings, 'run_sources', 'openai.com,anthropic.com,microsoft.com,google.com,meta.com')
+        return [source.strip() for source in run_sources.split(',')]
         
     def crawl_sources(self, source_domains: List[str]) -> List[Dict]:
         """Crawl multiple news sources and return raw stories"""

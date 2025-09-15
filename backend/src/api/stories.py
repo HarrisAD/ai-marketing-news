@@ -83,13 +83,21 @@ async def refresh_stories():
 
 @router.get("/sources")
 async def get_available_sources():
-    """Get list of available news sources"""
+    """Get list of available news sources with status"""
     try:
         sources = crawler_service.get_available_sources()
+        active_sources = crawler_service.get_active_sources()
+        
+        # Add status to each source
+        for source in sources:
+            source['is_active'] = source['domain'] in active_sources
+            
         return {
             "success": True,
             "sources": sources,
-            "count": len(sources)
+            "active_count": len(active_sources),
+            "total_count": len(sources),
+            "active_sources": active_sources
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

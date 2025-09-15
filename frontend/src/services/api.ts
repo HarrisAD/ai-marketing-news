@@ -3,7 +3,7 @@ import { Story, Newsletter, NewsSource, SystemStats, NewsletterRequest } from '.
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 120000, // 2 minutes for refresh operations
+  timeout: 60000, // 1 minute timeout - faster feedback for users
 });
 
 // Stories API

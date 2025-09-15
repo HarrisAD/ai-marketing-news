@@ -295,10 +295,15 @@ class CrawlerService:
                 'domain': domain,
                 'name': source.name,
                 'rss_urls': source.rss_urls,
-                'fallback_urls': source.fallback_urls
+                'fallback_urls': source.fallback_urls,
+                'has_rss': len(source.rss_urls) > 0
             })
         
         return sources
+    
+    def get_active_sources(self) -> List[str]:
+        """Get list of currently active source domains"""
+        return self.news_crawler.get_configured_sources()
     
     def get_available_tags(self) -> List[str]:
         """Get list of available story tags"""

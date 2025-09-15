@@ -24,15 +24,15 @@ async def lifespan(app: FastAPI):
     logger.info(f"Data directory: {settings.data_dir}")
     logger.info(f"Logs directory: {settings.logs_dir}")
     
-    # Start scheduler
-    from services.scheduler import scheduler
-    scheduler.start()
+    # Start scheduler (temporarily disabled)
+    # from services.scheduler import scheduler
+    # scheduler.start()
     
     yield
     
     # Shutdown
     logger.info("👋 AI Marketing News System shutting down...")
-    scheduler.stop()
+    # scheduler.stop()
 
 app = FastAPI(
     title="AI Marketing News System",

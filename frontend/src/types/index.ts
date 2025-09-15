@@ -40,6 +40,8 @@ export interface NewsSource {
   name: string;
   rss_urls: string[];
   fallback_urls: string[];
+  is_active?: boolean;
+  has_rss?: boolean;
 }
 
 export interface SystemStats {

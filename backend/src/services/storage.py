@@ -84,7 +84,7 @@ class TextStore:
                         
                         if days_back:
                             story_date = datetime.fromisoformat(story['published_date'].replace('Z', '+00:00'))
-                            cutoff = datetime.now().replace(tzinfo=story_date.tzinfo) - timedelta(days=days_back)
+                            cutoff = datetime.now().replace(tzinfo=story_date.tzinfo) - timedelta(days=int(days_back))
                             if story_date < cutoff:
                                 continue
                         

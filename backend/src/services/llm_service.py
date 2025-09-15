@@ -10,8 +10,11 @@ logger = logging.getLogger(__name__)
 
 class LLMService:
     def __init__(self):
-        self.client = OpenAI(api_key=settings.openai_api_key)
-        self.model = settings.openai_model
+        # Force fresh API key on each initialization
+        from services.config import settings as fresh_settings
+        self.client = OpenAI(api_key=fresh_settings.openai_api_key)
+        self.model = fresh_settings.openai_model
+        print(f"LLMService initialized with API key: {fresh_settings.openai_api_key[:20]}...")
     
     def score_story(self, story_dict: Dict) -> Dict:
         """Score a story for marketing relevance and extract metadata"""
@@ -21,7 +24,7 @@ class LLMService:
         
         try:
             # Add rate limiting to prevent 429 errors
-            time.sleep(0.5)  # Wait 500ms between API calls
+            time.sleep(1)  # Wait 1 second between API calls (should handle 10k RPM easily)
             
             response = self.client.chat.completions.create(
                 model=self.model,
