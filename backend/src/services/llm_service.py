@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from typing import Dict, List, Optional
 from openai import OpenAI
 from models.story import Story, StoryTag
@@ -19,6 +20,9 @@ class LLMService:
         prompt = self._create_scoring_prompt(story_dict)
         
         try:
+            # Add rate limiting to prevent 429 errors
+            time.sleep(0.5)  # Wait 500ms between API calls
+            
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -32,11 +36,24 @@ class LLMService:
             # Parse the JSON response
             content = response.choices[0].message.content.strip()
             
+            # Log the raw response for debugging
+            logger.debug(f"Raw OpenAI response: {content[:200]}...")
+            
             # Try to extract JSON if it's wrapped in markdown code blocks
             if content.startswith('```json'):
                 content = content.split('```json')[1].split('```')[0].strip()
             elif content.startswith('```'):
                 content = content.split('```')[1].split('```')[0].strip()
+            
+            # Additional cleaning for common issues
+            if not content:
+                raise ValueError("Empty response from OpenAI")
+            
+            # Try to find JSON object in the response
+            if '{' in content and '}' in content:
+                start = content.find('{')
+                end = content.rfind('}') + 1
+                content = content[start:end]
             
             result = json.loads(content)
             
@@ -56,6 +73,10 @@ class LLMService:
             logger.info(f"Scored story '{story_dict['title']}' with score {result.get('overall_score', 0)}")
             return story_dict
             
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing failed for story '{story_dict.get('title', 'Unknown')}': {e}")
+            logger.error(f"Raw content was: {content[:500] if 'content' in locals() else 'No content captured'}")
+            # Return story with default/empty scores
         except Exception as e:
             logger.error(f"Failed to score story '{story_dict.get('title', 'Unknown')}': {e}")
             # Return story with default/empty scores

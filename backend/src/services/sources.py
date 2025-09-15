@@ -206,10 +206,22 @@ class NewsCrawler:
                 
                 # Extract story data
                 story_url = entry.get('link', '')
-                title = entry.get('title', '')
-                description = entry.get('summary', '')
+                title = entry.get('title', '').strip()
+                description = entry.get('summary', '').strip()
                 
                 if not story_url or not title:
+                    continue
+                
+                # Filter out low-quality titles
+                bad_titles = ['News', 'Company', 'Product', 'Safety', 'Security', 'Global Affairs', 
+                             'Policy', 'Research', 'Learn More', 'Next', 'FEATURED', 'The Latest',
+                             'More on the Cloud Blog', 'Tag:', 'Announcements', 'Updates']
+                
+                if any(bad_title in title for bad_title in bad_titles):
+                    continue
+                
+                # Skip very short titles
+                if len(title.strip()) < 10:
                     continue
                 
                 # Generate unique ID
@@ -325,8 +337,17 @@ class NewsCrawler:
         
         try:
             from dateutil import parser
-            return parser.parse(date_str)
-        except:
+            parsed_date = parser.parse(date_str)
+            
+            # If the parsed date is timezone-naive, make it timezone-aware (UTC)
+            if parsed_date.tzinfo is None:
+                from datetime import timezone
+                parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+            
+            # Convert to naive datetime for comparison with cutoff_date
+            return parsed_date.replace(tzinfo=None)
+        except Exception as e:
+            logger.debug(f"Failed to parse date '{date_str}': {e}")
             return None
     
     def _generate_story_id(self, published_date: datetime, domain: str, url: str) -> str:
