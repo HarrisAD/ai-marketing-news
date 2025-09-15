@@ -2,9 +2,23 @@
 
 An automated AI news monitoring and newsletter generation system designed specifically for marketers.
 
-## 🚀 Easy Railway Deployment
+## 🎯 **For Non-Technical Users** 
 
-**Quick Deploy (3 minutes):**
+### 📥 **Super Simple Setup - No GitHub Account Needed!**
+
+1. **[Download ZIP File](https://github.com/HarrisAD/ai-marketing-news/archive/refs/heads/main.zip)** 
+2. **Install Python & Node.js** (links in guide)
+3. **Double-click setup script**
+4. **Add your OpenAI API key**  
+5. **Done!** Your AI news system runs locally
+
+**[📖 Complete Non-Technical Guide →](./EASY-SETUP.md)**
+
+---
+
+## 🚀 **For Developers - Cloud Deployment**
+
+**Railway Deployment (3 minutes):**
 
 1. **Sign up at [Railway.app](https://railway.app)** (free account)
 2. **Click "New Project"** → **"Deploy from GitHub repo"**
@@ -14,7 +28,7 @@ An automated AI news monitoring and newsletter generation system designed specif
 
 **Cost:** FREE on Railway (within $5/month credit) + OpenAI usage (~$5-20/month)
 
-[📖 **Detailed Step-by-Step Guide**](./DEPLOY.md)
+[📖 **Technical Deployment Guide**](./DEPLOY.md)
 
 ---
 
