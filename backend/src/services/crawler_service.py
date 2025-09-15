@@ -150,13 +150,30 @@ class CrawlerService:
             
             # Filter by date range
             filtered_stories = []
+            
+            # Normalize date_from and date_to to naive datetime for comparison
+            if date_from.tzinfo is not None:
+                date_from = date_from.replace(tzinfo=None)
+            if date_to.tzinfo is not None:
+                date_to = date_to.replace(tzinfo=None)
+            
             for story in all_stories:
                 story_date = story.get('published_date')
+                
+                # Handle string dates
                 if isinstance(story_date, str):
                     try:
                         story_date = datetime.fromisoformat(story_date.replace('Z', '+00:00'))
+                        # Convert to naive datetime
+                        story_date = story_date.replace(tzinfo=None)
                     except ValueError:
                         continue
+                elif isinstance(story_date, datetime):
+                    # Convert to naive datetime if timezone-aware
+                    if story_date.tzinfo is not None:
+                        story_date = story_date.replace(tzinfo=None)
+                else:
+                    continue
                 
                 if date_from <= story_date <= date_to:
                     filtered_stories.append(story)
