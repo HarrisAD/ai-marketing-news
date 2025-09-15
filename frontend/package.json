@@ -17,7 +17,8 @@
     "axios": "^1.6.0",
     "date-fns": "^2.29.0",
     "@heroicons/react": "^2.0.0",
-    "react-query": "^3.39.0"
+    "react-query": "^3.39.0",
+    "serve": "^14.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",

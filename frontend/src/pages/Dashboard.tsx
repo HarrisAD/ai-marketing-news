@@ -5,10 +5,10 @@ import {
   DocumentTextIcon, 
   NewspaperIcon, 
   ChartBarIcon,
-  RefreshIcon,
+  ArrowPathIcon,
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
-import { storiesApi } from '../services/api';
+import { storiesApi, newslettersApi } from '../services/api';
 
 const Dashboard: React.FC = () => {
   const { data: statsData, isLoading: statsLoading } = useQuery(
@@ -25,7 +25,7 @@ const Dashboard: React.FC = () => {
 
   const { data: newslettersData } = useQuery(
     'newsletters',
-    storiesApi.getNewsletters
+    newslettersApi.getNewsletters
   );
 
   const stats = statsData?.stats;
@@ -55,7 +55,7 @@ const Dashboard: React.FC = () => {
             onClick={handleRefresh}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            <RefreshIcon className="h-4 w-4 mr-2" />
+            <ArrowPathIcon className="h-4 w-4 mr-2" />
             Refresh Stories
           </button>
         </div>

@@ -3,7 +3,7 @@ import { Story, Newsletter, NewsSource, SystemStats, NewsletterRequest } from '.
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 30000,
+  timeout: 120000, // 2 minutes for refresh operations
 });
 
 // Stories API
@@ -24,8 +24,8 @@ export const storiesApi = {
     return response.data;
   },
 
-  refreshStories: async (sourceDomains?: string[]): Promise<any> => {
-    const response = await api.post('/refresh', { source_domains: sourceDomains });
+  refreshStories: async (): Promise<any> => {
+    const response = await api.post('/refresh');
     return response.data;
   },
 

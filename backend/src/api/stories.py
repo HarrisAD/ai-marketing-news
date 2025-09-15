@@ -62,10 +62,10 @@ async def get_story(story_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/refresh")
-async def refresh_stories(source_domains: Optional[List[str]] = None):
+async def refresh_stories():
     """Manually trigger news crawling and story updates"""
     try:
-        result = crawler_service.run_full_update(source_domains)
+        result = crawler_service.run_full_update()
         
         if result['success']:
             return {

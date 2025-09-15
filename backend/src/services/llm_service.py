@@ -30,7 +30,15 @@ class LLMService:
             )
             
             # Parse the JSON response
-            result = json.loads(response.choices[0].message.content)
+            content = response.choices[0].message.content.strip()
+            
+            # Try to extract JSON if it's wrapped in markdown code blocks
+            if content.startswith('```json'):
+                content = content.split('```json')[1].split('```')[0].strip()
+            elif content.startswith('```'):
+                content = content.split('```')[1].split('```')[0].strip()
+            
+            result = json.loads(content)
             
             # Update story dict with AI analysis
             story_dict.update({
