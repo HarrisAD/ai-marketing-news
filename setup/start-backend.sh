@@ -15,17 +15,20 @@ if [ -d "venv" ]; then
     echo "✅ Virtual environment activated"
 fi
 
-# Check if .env file exists
+# Ensure .env exists
 if [ ! -f ".env" ]; then
-    echo "❌ Error: .env file not found"
-    echo "   Please copy .env.example to .env and add your OpenAI API key"
-    exit 1
+    if [ -f ".env.example" ]; then
+        echo "ℹ️  Creating .env from template..."
+        cp .env.example .env
+    else
+        echo "❌ .env.example not found. Please run setup first."
+        exit 1
+    fi
 fi
 
 # Check if OpenAI API key is set
 if ! grep -q "OPENAI_API_KEY=sk-" .env 2>/dev/null; then
-    echo "⚠️  Warning: OpenAI API key may not be configured properly"
-    echo "   Please ensure OPENAI_API_KEY is set in .env file"
+    echo "⚠️  Warning: OpenAI API key is not configured yet. Use the dashboard to paste it before generating stories."
 fi
 
 # Create data directories

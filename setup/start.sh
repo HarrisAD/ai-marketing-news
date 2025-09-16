@@ -10,20 +10,21 @@ echo "  Starting AI Marketing News System"
 echo "============================================"
 echo
 
-# Check if .env file exists and has API key
+# Ensure .env exists
 if [ ! -f "backend/.env" ]; then
-    echo "ERROR: Configuration file not found!"
-    echo "Please run setup.sh first"
-    exit 1
+    echo "No backend/.env found. Creating one from backend/.env.example..."
+    if [ -f "backend/.env.example" ]; then
+        cp backend/.env.example backend/.env
+        echo "➡️  backend/.env created. You can paste your OpenAI API key via the dashboard once it loads."
+    else
+        echo "ERROR: backend/.env.example not found. Please re-run setup first."
+        exit 1
+    fi
 fi
 
+# Warn if API key placeholder still present
 if grep -q "your_openai_api_key_here" backend/.env; then
-    echo "ERROR: OpenAI API key not configured!"
-    echo
-    echo "Please edit backend/.env and add your OpenAI API key"
-    echo "Get your key from: https://platform.openai.com/api-keys"
-    echo
-    exit 1
+    echo "⚠️  OpenAI API key not configured yet. You'll be prompted on the dashboard to paste it before generating stories."
 fi
 
 echo "Starting backend server..."

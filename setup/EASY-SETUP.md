@@ -63,6 +63,8 @@
 
 **Your AI News System will open automatically!** 🎊
 
+> ℹ️ If the launcher warns that the OpenAI key isn’t configured yet, that’s expected—use the dashboard card to paste it after everything loads.
+
 ---
 
 ## 📱 **How to Use:**

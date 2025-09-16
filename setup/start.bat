@@ -6,23 +6,23 @@ echo   Starting AI Marketing News System
 echo ============================================
 echo.
 
-REM Check if .env file exists and has API key
+REM Ensure .env exists
 if not exist "backend\.env" (
-    echo ERROR: Configuration file not found!
-    echo Please run setup.bat first
-    pause
-    exit /b 1
+    if exist "backend\.env.example" (
+        echo Creating backend\.env from template...
+        copy backend\.env.example backend\.env >nul
+        echo You can paste your OpenAI API key in the dashboard after launch.
+    ) else (
+        echo ERROR: backend\.env.example not found. Please run setup first.
+        pause
+        exit /b 1
+    )
 )
 
 findstr /C:"your_openai_api_key_here" backend\.env >nul
 if not errorlevel 1 (
-    echo ERROR: OpenAI API key not configured!
-    echo.
-    echo Please edit backend\.env and add your OpenAI API key
-    echo Get your key from: https://platform.openai.com/api-keys
-    echo.
-    pause
-    exit /b 1
+    echo WARNING: OpenAI API key not configured yet.
+    echo You can paste it using the OpenAI API Key card on the dashboard once the app loads.
 )
 
 echo Starting backend server...

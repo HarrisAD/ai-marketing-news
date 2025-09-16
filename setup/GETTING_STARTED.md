@@ -70,6 +70,8 @@ npm install
 ```
 ✅ Frontend will be available at http://localhost:3000
 
+> ℹ️ The launch scripts may warn that the OpenAI API key isn’t configured. That’s normal on first run—use the dashboard’s **OpenAI API Key** card to paste it once the UI loads.
+
 ## 🎯 Your First Steps
 
 ### 1. Open the Application
