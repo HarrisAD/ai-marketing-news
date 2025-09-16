@@ -37,7 +37,7 @@
 
 ### **For Mac:**
 1. **Double-click** `Mac-Setup.command` inside the `setup` folder
-2. **If macOS blocks it**, right-click the file → **Open** → **Open**
+2. **If macOS blocks it**, right-click (or control-click) the file → **Open** → **Open**. You can also go to **System Settings → Privacy & Security** and click **Open Anyway** if the warning appears.
 3. **Wait for installation** (2-3 minutes)
 4. **Optional**: edit `backend/.env` to add the key now, or paste it into the dashboard later.
 

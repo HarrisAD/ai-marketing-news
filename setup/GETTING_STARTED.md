@@ -35,6 +35,8 @@ cd setup
 
 💡 **macOS shortcut:** you can double-click `Mac-Setup.command` in the `setup` folder instead of using Terminal.
 
+> If macOS warns that it “can’t verify the developer”, right-click (or control-click) the `.command` file, choose **Open**, then click **Open** again. You can also allow it from **System Settings → Privacy & Security → Open Anyway**.
+
 When the dashboard opens for the first time, use the **OpenAI API Key** card to paste your `sk-...` key. It is stored securely on your machine and used for all future requests.
 
 ### Option 2: Manual Setup
