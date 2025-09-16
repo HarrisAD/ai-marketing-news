@@ -4,8 +4,9 @@ from typing import List
 
 class Settings(BaseSettings):
     # OpenAI Configuration
-    openai_api_key: str
+    openai_api_key: str | None = None
     openai_model: str = "gpt-4o-mini"
+    openai_request_delay: float = 0.0
     
     # Data Configuration
     data_dir: str = "./data"

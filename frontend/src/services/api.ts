@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Story, Newsletter, NewsSource, SystemStats, NewsletterRequest } from '../types';
+import { Story, Newsletter, NewsSource, SystemStats, NewsletterRequest, AddSourceRequest, OpenAIConfigStatus } from '../types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -14,6 +14,8 @@ export const storiesApi = {
     days_back?: number;
     limit?: number;
     canonical_only?: boolean;
+    date_from?: string;
+    date_to?: string;
   }): Promise<{ stories: Story[]; count: number }> => {
     const response = await api.get('/stories', { params });
     return response.data;
@@ -34,6 +36,16 @@ export const storiesApi = {
     return response.data;
   },
 
+  updateSourceStatus: async (domain: string, active: boolean): Promise<any> => {
+    const response = await api.post(`/sources/${encodeURIComponent(domain)}/status`, { active });
+    return response.data;
+  },
+
+  addSource: async (request: AddSourceRequest): Promise<any> => {
+    const response = await api.post('/sources', request);
+    return response.data;
+  },
+
   getTags: async (): Promise<{ tags: string[]; count: number }> => {
     const response = await api.get('/tags');
     return response.data;
@@ -41,6 +53,16 @@ export const storiesApi = {
 
   getStats: async (): Promise<{ stats: SystemStats }> => {
     const response = await api.get('/stats');
+    return response.data;
+  },
+
+  getOpenAIConfig: async (): Promise<OpenAIConfigStatus> => {
+    const response = await api.get('/config/openai');
+    return response.data;
+  },
+
+  updateOpenAIKey: async (apiKey: string): Promise<OpenAIConfigStatus> => {
+    const response = await api.post('/config/openai', { api_key: apiKey });
     return response.data;
   },
 };

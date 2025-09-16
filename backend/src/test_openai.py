@@ -6,14 +6,20 @@ Test OpenAI API key and check rate limits
 import os
 from openai import OpenAI
 from services.config import settings
+from services.app_config import app_config
 
 def test_api_key():
     print("🔑 Testing OpenAI API Key...")
-    print(f"API Key: {settings.openai_api_key[:20]}...")
+    api_key = app_config.get_openai_api_key() or settings.openai_api_key
+    if not api_key:
+        raise RuntimeError("No OpenAI API key configured. Set one via the dashboard or .env file first.")
+
+    masked = f"sk-...{api_key[-4:]}" if len(api_key) > 4 else "sk-..."
+    print(f"API Key: {masked}")
     print(f"Model: {settings.openai_model}")
     
     try:
-        client = OpenAI(api_key=settings.openai_api_key)
+        client = OpenAI(api_key=api_key)
         
         # Test with a simple completion
         response = client.chat.completions.create(

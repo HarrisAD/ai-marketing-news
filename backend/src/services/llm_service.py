@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 from openai import OpenAI
 from models.story import Story, StoryTag
 from services.config import settings
+from services.app_config import app_config
 
 logger = logging.getLogger(__name__)
 
@@ -12,9 +13,15 @@ class LLMService:
     def __init__(self):
         # Force fresh API key on each initialization
         from services.config import settings as fresh_settings
-        self.client = OpenAI(api_key=fresh_settings.openai_api_key)
         self.model = fresh_settings.openai_model
-        print(f"LLMService initialized with API key: {fresh_settings.openai_api_key[:20]}...")
+        self.current_api_key = None
+        self.client = None
+        # Allow configurable pacing between API calls to respect rate limits without unnecessary delays
+        try:
+            self.request_delay = max(0.0, float(fresh_settings.openai_request_delay))
+        except (TypeError, ValueError):
+            self.request_delay = 0.0
+        self._ensure_client()
     
     def score_story(self, story_dict: Dict) -> Dict:
         """Score a story for marketing relevance and extract metadata"""
@@ -23,9 +30,13 @@ class LLMService:
         prompt = self._create_scoring_prompt(story_dict)
         
         try:
-            # Add rate limiting to prevent 429 errors
-            time.sleep(1)  # Wait 1 second between API calls (should handle 10k RPM easily)
-            
+            # Refresh client in case key changed
+            self._ensure_client()
+
+            # Add configurable rate limiting to prevent 429 errors without unnecessary delays
+            if self.request_delay:
+                time.sleep(self.request_delay)
+
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -201,6 +212,8 @@ Provide a detailed analysis focusing on how this affects marketing professionals
         prompt = self._create_newsletter_prompt(sorted_stories, editorial_instructions)
         
         try:
+            self._ensure_client()
+
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -218,6 +231,19 @@ Provide a detailed analysis focusing on how this affects marketing professionals
         except Exception as e:
             logger.error(f"Failed to generate newsletter: {e}")
             return f"Error generating newsletter: {str(e)}"
+
+    def _ensure_client(self) -> None:
+        """Ensure the OpenAI client is initialised with the latest API key."""
+        key = app_config.get_openai_api_key()
+        if not key:
+            key = settings.openai_api_key
+
+        if not key or key.startswith("your_openai_api_key_here"):
+            raise ValueError("OpenAI API key is not configured")
+
+        if self.client is None or key != self.current_api_key:
+            self.client = OpenAI(api_key=key)
+            self.current_api_key = key
     
     def _get_newsletter_system_prompt(self) -> str:
         """System prompt for newsletter generation"""

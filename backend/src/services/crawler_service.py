@@ -6,6 +6,7 @@ from services.llm_service import LLMService
 from services.storage import TextStore
 from services.deduplication import DeduplicationService
 from services.config import settings
+from services.source_config import source_config
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,8 @@ class CrawlerService:
             days_back=settings.crawler_days_back,
             max_stories_per_source=settings.max_stories_per_source
         )
-        self.llm_service = LLMService()
+        self._llm_service = None
+        self._llm_key_snapshot = None
         self.storage = TextStore()
         self.deduplication_service = DeduplicationService()
     
@@ -68,7 +70,8 @@ class CrawlerService:
                         continue
                     
                     logger.info(f"Scoring story {i}/{len(raw_stories)}: {story.get('title', 'Unknown')[:50]}...")
-                    scored_story = self.llm_service.score_story(story)
+                    llm_service = self._get_llm_service()
+                    scored_story = llm_service.score_story(story)
                     scored_stories.append(scored_story)
                 except Exception as e:
                     logger.error(f"Failed to score story {i}: {e}")
@@ -136,13 +139,16 @@ class CrawlerService:
             }
     
     def get_stories(self, min_score: int = None, source_domain: str = None, 
-                   days_back: int = None, limit: int = None) -> List[Dict]:
+                   days_back: int = None, limit: int = None,
+                   date_from: datetime = None, date_to: datetime = None) -> List[Dict]:
         """Get stories with filtering options"""
         
         stories = self.storage.get_all_stories(
             min_score=min_score,
             source_domain=source_domain,
-            days_back=days_back
+            days_back=days_back,
+            date_from=date_from,
+            date_to=date_to
         )
         
         # Sort by score (highest first), then by date (newest first)
@@ -216,7 +222,8 @@ class CrawlerService:
             
             # Generate newsletter content
             logger.info(f"Generating newsletter with {len(newsletter_stories)} stories")
-            newsletter_content = self.llm_service.generate_newsletter(
+            llm_service = self._get_llm_service()
+            newsletter_content = llm_service.generate_newsletter(
                 newsletter_stories, 
                 editorial_instructions
             )
@@ -288,19 +295,25 @@ class CrawlerService:
     def get_available_sources(self) -> List[Dict]:
         """Get list of available news sources"""
         from services.sources import NEWS_SOURCES
-        
+
+        active_set = set(source_config.get_active_sources())
+        custom_sources = source_config.get_custom_sources()
+
         sources = []
         for domain, source in NEWS_SOURCES.items():
+            normalized = domain.lower()
             sources.append({
-                'domain': domain,
+                'domain': normalized,
                 'name': source.name,
                 'rss_urls': source.rss_urls,
                 'fallback_urls': source.fallback_urls,
-                'has_rss': len(source.rss_urls) > 0
+                'has_rss': len(source.rss_urls) > 0,
+                'is_active': normalized in active_set,
+                'is_custom': normalized in custom_sources
             })
-        
+
         return sources
-    
+
     def get_active_sources(self) -> List[str]:
         """Get list of currently active source domains"""
         return self.news_crawler.get_configured_sources()
@@ -309,3 +322,22 @@ class CrawlerService:
         """Get list of available story tags"""
         from models.story import StoryTag
         return [tag.value for tag in StoryTag]
+
+    def _get_llm_service(self) -> LLMService:
+        """Return an LLM service instance, refreshing if the API key changed."""
+        from services.app_config import app_config
+
+        current_key = app_config.get_openai_api_key() or settings.openai_api_key
+
+        if self._llm_service is None:
+            self._llm_service = LLMService()
+            self._llm_key_snapshot = current_key
+        else:
+            if current_key != self._llm_key_snapshot:
+                self._llm_service = LLMService()
+                self._llm_key_snapshot = current_key
+        return self._llm_service
+
+    def reset_llm_service(self) -> None:
+        self._llm_service = None
+        self._llm_key_snapshot = None

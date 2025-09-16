@@ -1,5 +1,10 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+cd "$PROJECT_ROOT"
+
 echo "============================================"
 echo "  Starting AI Marketing News System"
 echo "============================================"
@@ -22,18 +27,18 @@ if grep -q "your_openai_api_key_here" backend/.env; then
 fi
 
 echo "Starting backend server..."
-cd backend/src
+cd "$PROJECT_ROOT/backend/src"
 python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
-cd ../..
+cd "$PROJECT_ROOT"
 
 sleep 3
 
 echo "Starting frontend server..."
-cd frontend
+cd "$PROJECT_ROOT/frontend"
 npm run dev &
 FRONTEND_PID=$!
-cd ..
+cd "$PROJECT_ROOT"
 
 sleep 5
 

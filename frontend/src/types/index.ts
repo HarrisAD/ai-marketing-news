@@ -40,8 +40,9 @@ export interface NewsSource {
   name: string;
   rss_urls: string[];
   fallback_urls: string[];
-  is_active?: boolean;
-  has_rss?: boolean;
+  is_active: boolean;
+  has_rss: boolean;
+  is_custom?: boolean;
 }
 
 export interface SystemStats {
@@ -61,4 +62,17 @@ export interface NewsletterRequest {
   selected_story_ids: string[];
   editorial_instructions: string;
   max_stories: number;
+}
+
+export interface AddSourceRequest {
+  domain: string;
+  name: string;
+  rss_urls: string[];
+  fallback_urls: string[];
+  activate: boolean;
+}
+
+export interface OpenAIConfigStatus {
+  configured: boolean;
+  masked_key: string | null;
 }

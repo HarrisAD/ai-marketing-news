@@ -2,7 +2,7 @@ import json
 import os
 import logging
 from typing import List, Dict, Optional, Iterator
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import portalocker
 from pathlib import Path
 from models.story import Story
@@ -55,14 +55,15 @@ class TextStore:
             return 0
     
     def get_all_stories(self, min_score: int = None, source_domain: str = None, 
-                       days_back: int = None) -> List[Dict]:
+                       days_back: int = None, date_from: datetime = None,
+                       date_to: datetime = None) -> List[Dict]:
         """Retrieve all stories with optional filtering"""
         stories = []
-        
+
         try:
             if not self.stories_file.exists():
                 return stories
-            
+
             with open(self.stories_file, 'r', encoding='utf-8') as f:
                 portalocker.lock(f, portalocker.LOCK_SH)
                 
@@ -82,12 +83,26 @@ class TextStore:
                         if source_domain and story.get('source_domain') != source_domain:
                             continue
                         
+                        story_date = self._normalize_story_date(story.get('published_date'))
+
+                        if story_date is None:
+                            continue
+
                         if days_back:
-                            story_date = datetime.fromisoformat(story['published_date'].replace('Z', '+00:00'))
-                            cutoff = datetime.now().replace(tzinfo=story_date.tzinfo) - timedelta(days=int(days_back))
+                            cutoff = (datetime.now(timezone.utc) - timedelta(days=int(days_back))).replace(tzinfo=None)
                             if story_date < cutoff:
                                 continue
-                        
+
+                        if date_from:
+                            normalized_from = self._normalize_story_date(date_from)
+                            if normalized_from and story_date < normalized_from:
+                                continue
+
+                        if date_to:
+                            normalized_to = self._normalize_story_date(date_to)
+                            if normalized_to and story_date > normalized_to:
+                                continue
+
                         stories.append(story)
                         
                     except json.JSONDecodeError as e:
@@ -98,8 +113,30 @@ class TextStore:
             
         except Exception as e:
             logger.error(f"Failed to load stories: {e}")
-        
+
         return stories
+
+    def _normalize_story_date(self, value) -> Optional[datetime]:
+        """Convert stored or input date values to UTC naive datetimes for comparisons."""
+        if value is None:
+            return None
+
+        if isinstance(value, datetime):
+            dt = value
+        elif isinstance(value, str):
+            try:
+                dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+            except ValueError:
+                return None
+        else:
+            return None
+
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(timezone.utc)
+        else:
+            dt = dt.replace(tzinfo=timezone.utc)
+
+        return dt.replace(tzinfo=None)
     
     def get_story_by_id(self, story_id: str) -> Optional[Dict]:
         """Retrieve a specific story by ID"""

@@ -1,11 +1,12 @@
 {
   "newsletter_id": "2025-09-08",
-  "generated_date": "2025-09-15T17:58:17.864834",
+  "generated_date": "2025-09-15T19:43:17.892972",
   "stories_used": [
     "2025-09-15_anthropic.com_686f00ae",
-    "2025-09-15_microsoft.com_1b18fdd3"
+    "2025-09-15_microsoft.com_1b18fdd3",
+    "2025-09-12_google.com_0eb4ff60"
   ],
-  "story_count": 2,
+  "story_count": 3,
   "metadata": {
     "date_from": "2025-09-08T00:00:00",
     "date_to": "2025-09-15T23:59:59",

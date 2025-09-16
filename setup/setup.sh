@@ -5,6 +5,11 @@
 
 set -e  # Exit on any error
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+cd "$PROJECT_ROOT"
+
 echo "🚀 Setting up AI Marketing News System..."
 
 # Check prerequisites
@@ -35,7 +40,7 @@ echo "✅ Prerequisites check passed"
 
 # Backend setup
 echo "🐍 Setting up Python backend..."
-cd backend
+cd "$PROJECT_ROOT/backend"
 
 # Create virtual environment (optional but recommended)
 if [ ! -d "venv" ]; then
@@ -65,17 +70,17 @@ fi
 # Create data directories
 mkdir -p data logs
 
-cd ..
+cd "$PROJECT_ROOT"
 
 # Frontend setup
 echo "📱 Setting up React frontend..."
-cd frontend
+cd "$PROJECT_ROOT/frontend"
 
 # Install Node.js dependencies
 echo "Installing Node.js dependencies..."
 npm install
 
-cd ..
+cd "$PROJECT_ROOT"
 
 echo ""
 echo "🎉 Setup complete!"

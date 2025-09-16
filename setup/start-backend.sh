@@ -2,9 +2,12 @@
 
 # Start the AI Marketing News Backend
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
 echo "🚀 Starting AI Marketing News Backend..."
 
-cd backend
+cd "$PROJECT_ROOT/backend"
 
 # Activate virtual environment if it exists
 if [ -d "venv" ]; then

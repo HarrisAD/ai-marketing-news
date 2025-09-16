@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from 'react-query';
+import { useQuery, useQueryClient } from 'react-query';
 import { Link } from 'react-router-dom';
 import { 
   DocumentTextIcon, 
@@ -11,14 +11,34 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   GlobeAltIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  PlusCircleIcon
 } from '@heroicons/react/24/outline';
 import { storiesApi, newslettersApi } from '../services/api';
+import { NewsSource } from '../types';
 
 const Dashboard: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
-  const [refreshSuccess, setRefreshSuccess] = useState(false);
+  const [refreshSuccessMessage, setRefreshSuccessMessage] = useState<string | null>(null);
+  const [sourceActionDomain, setSourceActionDomain] = useState<string | null>(null);
+  const [sourceActionError, setSourceActionError] = useState<string | null>(null);
+  const [sourceActionMessage, setSourceActionMessage] = useState<string | null>(null);
+  const [isAddingSource, setIsAddingSource] = useState(false);
+  const [newSource, setNewSource] = useState({
+    domain: '',
+    name: '',
+    rss_urls: '',
+    fallback_urls: '',
+    activate: true,
+  });
+  const [showApiKeyForm, setShowApiKeyForm] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [apiKeyError, setApiKeyError] = useState<string | null>(null);
+  const [apiKeyMessage, setApiKeyMessage] = useState<string | null>(null);
+  const [isSavingApiKey, setIsSavingApiKey] = useState(false);
+
+  const queryClient = useQueryClient();
 
   const { data: statsData, isLoading: statsLoading } = useQuery(
     'stats',
@@ -43,20 +63,112 @@ const Dashboard: React.FC = () => {
     { refetchInterval: 60000 }
   );
 
+  const { data: openAIConfig, isLoading: openAIConfigLoading } = useQuery(
+    'openai-config',
+    storiesApi.getOpenAIConfig,
+    { refetchOnWindowFocus: false }
+  );
+
   const stats = statsData?.stats;
+
+  const handleToggleSource = async (source: NewsSource) => {
+    setSourceActionDomain(source.domain);
+    setSourceActionError(null);
+    setSourceActionMessage(null);
+
+    try {
+      await storiesApi.updateSourceStatus(source.domain, !source.is_active);
+      setSourceActionMessage(`${!source.is_active ? 'Activated' : 'Deactivated'} ${source.name}`);
+      await queryClient.invalidateQueries('sources');
+    } catch (error: any) {
+      const message = error?.response?.data?.detail || 'Failed to update source status.';
+      setSourceActionError(message);
+    } finally {
+      setSourceActionDomain(null);
+    }
+  };
+
+  const handleAddSource = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSourceActionError(null);
+    setSourceActionMessage(null);
+    setIsAddingSource(true);
+
+    try {
+      const rssUrls = newSource.rss_urls
+        .split(',')
+        .map((url) => url.trim())
+        .filter((url) => url.length > 0);
+      const fallbackUrls = newSource.fallback_urls
+        .split(',')
+        .map((url) => url.trim())
+        .filter((url) => url.length > 0);
+
+      await storiesApi.addSource({
+        domain: newSource.domain.trim(),
+        name: newSource.name.trim(),
+        rss_urls: rssUrls,
+        fallback_urls: fallbackUrls,
+        activate: newSource.activate,
+      });
+
+      setSourceActionMessage(`Added ${newSource.name || newSource.domain}`);
+      setNewSource({ domain: '', name: '', rss_urls: '', fallback_urls: '', activate: true });
+      await queryClient.invalidateQueries('sources');
+    } catch (error: any) {
+      const message = error?.response?.data?.detail || 'Failed to add source. Please check the details and try again.';
+      setSourceActionError(message);
+    } finally {
+      setIsAddingSource(false);
+    }
+  };
+
+  const handleSaveApiKey = async () => {
+    setApiKeyError(null);
+    setApiKeyMessage(null);
+
+    if (!apiKeyInput.trim()) {
+      setApiKeyError('Please enter your OpenAI API key.');
+      return;
+    }
+
+    setIsSavingApiKey(true);
+    try {
+      await storiesApi.updateOpenAIKey(apiKeyInput.trim());
+      setApiKeyMessage('OpenAI API key saved successfully.');
+      setApiKeyInput('');
+      setShowApiKeyForm(false);
+      await queryClient.invalidateQueries('openai-config');
+    } catch (error: any) {
+      const message = error?.response?.data?.detail || 'Failed to save API key. Please double-check and try again.';
+      setApiKeyError(message);
+    } finally {
+      setIsSavingApiKey(false);
+    }
+  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     setRefreshError(null);
-    setRefreshSuccess(false);
+    setRefreshSuccessMessage(null);
     
     try {
-      await storiesApi.refreshStories();
-      setRefreshSuccess(true);
-      // Refresh queries after a short delay to show success message
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      const result = await storiesApi.refreshStories();
+      const backgroundRefresh = result?.is_background;
+      setRefreshSuccessMessage(
+        result?.message || (backgroundRefresh
+          ? 'Stories refresh started in the background. New stories will appear automatically when ready.'
+          : 'Stories refresh completed successfully!')
+      );
+
+      if (!backgroundRefresh) {
+        // For synchronous responses, reload after a short delay to show the success message
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        setIsRefreshing(false);
+      }
     } catch (error: any) {
       console.error('Failed to refresh stories:', error);
       
@@ -92,25 +204,25 @@ const Dashboard: React.FC = () => {
             className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
               isRefreshing 
                 ? 'bg-gray-400 cursor-not-allowed' 
-                : refreshSuccess 
+                : refreshSuccessMessage 
                   ? 'bg-green-600 hover:bg-green-700' 
                   : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
             <ArrowPathIcon className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Refreshing...' : refreshSuccess ? 'Success!' : 'Refresh Stories'}
+            {isRefreshing ? 'Refreshing...' : refreshSuccessMessage ? 'Success!' : 'Refresh Stories'}
           </button>
         </div>
       </div>
 
       {/* Notifications */}
-      {(refreshError || refreshSuccess) && (
+      {(refreshError || refreshSuccessMessage || apiKeyMessage || apiKeyError) && (
         <div className={`mt-4 rounded-md p-4 ${
-          refreshError ? 'bg-yellow-50' : 'bg-green-50'
+          refreshError || apiKeyError ? 'bg-yellow-50' : 'bg-green-50'
         }`}>
           <div className="flex">
             <div className="flex-shrink-0">
-              {refreshError ? (
+              {refreshError || apiKeyError ? (
                 <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
               ) : (
                 <CheckCircleIcon className="h-5 w-5 text-green-400" />
@@ -118,9 +230,9 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="ml-3">
               <p className={`text-sm font-medium ${
-                refreshError ? 'text-yellow-800' : 'text-green-800'
+                refreshError || apiKeyError ? 'text-yellow-800' : 'text-green-800'
               }`}>
-                {refreshError || 'Stories refresh completed successfully!'}
+                {refreshError || apiKeyError || refreshSuccessMessage || apiKeyMessage}
               </p>
             </div>
             <div className="ml-auto pl-3">
@@ -129,10 +241,12 @@ const Dashboard: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setRefreshError(null);
-                    setRefreshSuccess(false);
+                    setRefreshSuccessMessage(null);
+                    setApiKeyError(null);
+                    setApiKeyMessage(null);
                   }}
                   className={`inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                    refreshError 
+                    refreshError || apiKeyError
                       ? 'bg-yellow-50 text-yellow-500 hover:bg-yellow-100 focus:ring-yellow-600' 
                       : 'bg-green-50 text-green-500 hover:bg-green-100 focus:ring-green-600'
                   }`}
@@ -148,6 +262,69 @@ const Dashboard: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <ExclamationCircleIcon className={`h-6 w-6 ${openAIConfig?.configured ? 'text-green-500' : 'text-red-500'}`} />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    OpenAI API Key
+                  </dt>
+                  <dd className="text-lg font-medium text-gray-900">
+                    {openAIConfigLoading ? 'Checking...' : openAIConfig?.configured ? 'Configured' : 'Not Configured'}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+            <div className="mt-4">
+              <button
+                onClick={() => {
+                  setShowApiKeyForm((prev) => !prev);
+                  setApiKeyError(null);
+                  setApiKeyMessage(null);
+                }}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                {showApiKeyForm ? 'Cancel' : openAIConfig?.configured ? 'Update API Key' : 'Set API Key'}
+              </button>
+            </div>
+            {showApiKeyForm && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700">OpenAI API Key</label>
+                <input
+                  type="text"
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  placeholder="sk-..."
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  Paste the key you generated from the OpenAI dashboard. Stored securely on your device.
+                </p>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    onClick={handleSaveApiKey}
+                    disabled={isSavingApiKey}
+                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+                      isSavingApiKey ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                  >
+                    {isSavingApiKey ? 'Saving...' : 'Save Key'}
+                  </button>
+                </div>
+              </div>
+            )}
+            {openAIConfig?.masked_key && !showApiKeyForm && (
+              <p className="mt-4 text-xs text-gray-500">
+                Current key: {openAIConfig.masked_key}
+              </p>
+            )}
+          </div>
+        </div>
+
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
@@ -351,6 +528,11 @@ const Dashboard: React.FC = () => {
                             RSS
                           </span>
                         )}
+                        {source.is_custom && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            Custom
+                          </span>
+                        )}
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                           <GlobeAltIcon className="h-3 w-3 mr-1" />
                           Web
@@ -362,16 +544,109 @@ const Dashboard: React.FC = () => {
                         }`}>
                           {source.is_active ? 'Active' : 'Inactive'}
                         </span>
+                        <button
+                          onClick={() => handleToggleSource(source)}
+                          disabled={sourceActionDomain === source.domain}
+                          className={`inline-flex items-center px-2.5 py-1 border text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                            source.is_active
+                              ? 'border-red-200 text-red-600 hover:bg-red-50 focus:ring-red-500'
+                              : 'border-green-200 text-green-600 hover:bg-green-50 focus:ring-green-500'
+                          } ${sourceActionDomain === source.domain ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {sourceActionDomain === source.domain
+                            ? 'Updating...'
+                            : source.is_active
+                              ? 'Deactivate'
+                              : 'Activate'}
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
-                <p className="text-xs text-gray-500">
-                  Active sources are configured in your environment settings. 
-                  Contact your administrator to modify source selection.
-                </p>
+              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                {(sourceActionError || sourceActionMessage) && (
+                  <div className={`mb-4 rounded-md p-3 text-sm ${
+                    sourceActionError ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
+                  }`}>
+                    {sourceActionError || sourceActionMessage}
+                  </div>
+                )}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center mb-4">
+                    <PlusCircleIcon className="h-5 w-5 text-blue-500 mr-2" />
+                    <h4 className="text-sm font-medium text-gray-900">Add New Source</h4>
+                  </div>
+                  <form className="space-y-4" onSubmit={handleAddSource}>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 uppercase tracking-wide">Domain</label>
+                        <input
+                          type="text"
+                          value={newSource.domain}
+                          onChange={(e) => setNewSource((prev) => ({ ...prev, domain: e.target.value }))}
+                          placeholder="example.com"
+                          required
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 uppercase tracking-wide">Display Name</label>
+                        <input
+                          type="text"
+                          value={newSource.name}
+                          onChange={(e) => setNewSource((prev) => ({ ...prev, name: e.target.value }))}
+                          placeholder="Source Name"
+                          required
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 uppercase tracking-wide">RSS URLs (comma separated)</label>
+                      <input
+                        type="text"
+                        value={newSource.rss_urls}
+                        onChange={(e) => setNewSource((prev) => ({ ...prev, rss_urls: e.target.value }))}
+                        placeholder="https://example.com/feed"
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 uppercase tracking-wide">Fallback URLs (comma separated)</label>
+                      <input
+                        type="text"
+                        value={newSource.fallback_urls}
+                        onChange={(e) => setNewSource((prev) => ({ ...prev, fallback_urls: e.target.value }))}
+                        placeholder="https://example.com/news"
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        id="activate-source"
+                        type="checkbox"
+                        checked={newSource.activate}
+                        onChange={(e) => setNewSource((prev) => ({ ...prev, activate: e.target.checked }))}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="activate-source" className="ml-2 text-sm text-gray-700">
+                        Activate immediately after adding
+                      </label>
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={isAddingSource}
+                        className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+                          isAddingSource ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                      >
+                        {isAddingSource ? 'Adding...' : 'Add Source'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           )}

@@ -8,6 +8,7 @@ import os
 from services.config import settings
 from api.stories import router as stories_router
 from api.newsletters import router as newsletters_router
+from api.config import router as config_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -53,6 +54,7 @@ app.add_middleware(
 # Include API routers
 app.include_router(stories_router)
 app.include_router(newsletters_router)
+app.include_router(config_router)
 
 @app.get("/")
 async def root():
@@ -60,11 +62,13 @@ async def root():
 
 @app.get("/health")
 async def health_check():
+    from services.app_config import app_config
+
     return {
         "status": "healthy",
         "data_dir": settings.data_dir,
         "logs_dir": settings.logs_dir,
-        "openai_configured": bool(settings.openai_api_key and settings.openai_api_key != "your_openai_api_key_here")
+        "openai_configured": app_config.get_openai_key_metadata()["configured"]
     }
 
 if __name__ == "__main__":

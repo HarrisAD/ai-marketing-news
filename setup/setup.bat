@@ -1,4 +1,6 @@
 @echo off
+setlocal
+cd /d "%~dp0.."
 echo ============================================
 echo   AI Marketing News System - Easy Setup
 echo ============================================
@@ -51,7 +53,7 @@ cd..
 REM Setup environment file
 echo.
 echo Setting up configuration...
-copy backend\.env.example backend\.env
+if not exist backend\.env copy backend\.env.example backend\.env >nul
 
 echo.
 echo ============================================

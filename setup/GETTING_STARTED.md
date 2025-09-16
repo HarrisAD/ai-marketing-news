@@ -21,12 +21,21 @@ This is your complete guide to setting up and running the AI Marketing News Syst
 
 ### Option 1: Automated Setup
 
+Download the project first: [Grab the ZIP directly](https://github.com/HarrisAD/ai-marketing-news/archive/refs/heads/main.zip), extract it, then open the new folder.
+
 ```bash
+# Move into the setup folder
+cd setup
+
 # Run the setup script
 ./setup.sh
 
 # Follow the prompts to add your OpenAI API key
 ```
+
+💡 **macOS shortcut:** you can double-click `Mac-Setup.command` in the `setup` folder instead of using Terminal.
+
+When the dashboard opens for the first time, use the **OpenAI API Key** card to paste your `sk-...` key. It is stored securely on your machine and used for all future requests.
 
 ### Option 2: Manual Setup
 
@@ -37,6 +46,8 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env file with your OpenAI API key
 
+> 💡 Alternatively, you can paste the key later into the dashboard's **OpenAI API Key** card and the system will store it for you.
+
 # Frontend setup  
 cd ../frontend
 npm install
@@ -46,13 +57,14 @@ npm install
 
 ### Start Backend (Terminal 1)
 ```bash
-./start-backend.sh
+# From the project root
+./setup/start-backend.sh
 ```
 ✅ Backend will be available at http://localhost:8000
 
 ### Start Frontend (Terminal 2)
 ```bash  
-./start-frontend.sh
+./setup/start-frontend.sh
 ```
 ✅ Frontend will be available at http://localhost:3000
 
@@ -86,10 +98,10 @@ npm install
 ### Environment Variables (backend/.env)
 
 ```bash
-# Required - Add your actual API key
+# Optional - Add your actual API key here or use the dashboard form
 OPENAI_API_KEY=sk-your_actual_key_here
 
-# Optional - Default values work fine
+# Optional - Default values work fine if you don't set them here
 OPENAI_MODEL=gpt-4o-mini
 CRON_TIME=08:30
 MIN_SCORE_DEFAULT=80

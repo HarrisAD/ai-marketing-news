@@ -7,6 +7,10 @@ Run this after installation to verify everything is working
 import sys
 import subprocess
 import os
+import json
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
 
 def check_python_version():
     """Check Python version"""
@@ -39,14 +43,14 @@ def check_dependencies():
 
 def check_env_file():
     """Check if .env file exists and has API key"""
-    env_path = "backend/.env"
-    if not os.path.exists(env_path):
+    env_path = ROOT_DIR / "backend/.env"
+    if not env_path.exists():
         print(f"❌ {env_path} file not found")
         print("   Run: cp backend/.env.example backend/.env")
-        return False
-    
+        return check_app_config()
+
     try:
-        with open(env_path, 'r') as f:
+        with env_path.open('r') as f:
             content = f.read()
             if 'OPENAI_API_KEY=sk-' in content:
                 print(f"✅ {env_path} has API key configured")
@@ -54,21 +58,39 @@ def check_env_file():
             else:
                 print(f"⚠️  {env_path} exists but API key may not be set")
                 print("   Please add your OpenAI API key to the .env file")
-                return False
+                return check_app_config()
     except Exception as e:
         print(f"❌ Error reading {env_path}: {e}")
+        return check_app_config()
+
+
+def check_app_config():
+    """Check if the persisted app configuration contains an API key."""
+    config_path = ROOT_DIR / "backend/src/data/app_config.json"
+    if not config_path.exists():
         return False
+
+    try:
+        with config_path.open("r") as fh:
+            data = json.load(fh)
+        key = data.get("openai_api_key")
+        if key and key.startswith("sk-"):
+            print(f"✅ {config_path} has API key configured")
+            return True
+    except Exception as exc:
+        print(f"⚠️  Unable to read {config_path}: {exc}")
+    return False
 
 def check_directories():
     """Check if required directories exist"""
-    dirs = ["backend/data", "backend/logs"]
+    dirs = [ROOT_DIR / "backend/data", ROOT_DIR / "backend/logs"]
     for directory in dirs:
-        if os.path.exists(directory):
+        if directory.exists():
             print(f"✅ {directory} directory exists")
         else:
             print(f"❌ {directory} directory missing")
             try:
-                os.makedirs(directory, exist_ok=True)
+                directory.mkdir(parents=True, exist_ok=True)
                 print(f"✅ Created {directory}")
             except Exception as e:
                 print(f"❌ Failed to create {directory}: {e}")

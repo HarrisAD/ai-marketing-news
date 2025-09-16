@@ -33,16 +33,21 @@ const NewsletterCreate: React.FC = () => {
     ['newsletter-stories', formData.date_from, formData.date_to, formData.min_score],
     () => storiesApi.getStories({
       min_score: formData.min_score,
-      days_back: Math.ceil((new Date().getTime() - new Date(formData.date_from).getTime()) / (1000 * 60 * 60 * 24))
+      date_from: formData.date_from,
+      date_to: formData.date_to,
     }),
     { enabled: !!(formData.date_from && formData.date_to) }
   );
 
-  // Filter stories by date range
-  const filteredStories = storiesData?.stories.filter(story => {
-    const storyDate = new Date(story.published_date).toISOString().split('T')[0];
-    return storyDate >= formData.date_from && storyDate <= formData.date_to;
-  }) || [];
+  const filteredStories = storiesData?.stories || [];
+
+  useEffect(() => {
+    const availableIds = new Set(filteredStories.map(story => story.id));
+    setSelectedStories(prev => {
+      const next = prev.filter(id => availableIds.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [filteredStories]);
 
   // Auto-select high-scoring stories when data loads
   useEffect(() => {
@@ -53,13 +58,30 @@ const NewsletterCreate: React.FC = () => {
         .map(story => story.id);
       setSelectedStories(autoSelected);
     }
-  }, [filteredStories, formData.min_score, formData.max_stories]);
+  }, [filteredStories, formData.min_score, formData.max_stories, selectedStories.length]);
+
+  useEffect(() => {
+    setSelectedStories(prev => {
+      if (prev.length <= formData.max_stories) {
+        return prev;
+      }
+      return prev.slice(0, formData.max_stories);
+    });
+  }, [formData.max_stories]);
+
+  const selectedStoryObjects = filteredStories.filter(story => selectedStories.includes(story.id));
+
+  const scoreRange = selectedStoryObjects.length > 0
+    ? `${Math.min(...selectedStoryObjects.map(story => story.score))}-${Math.max(...selectedStoryObjects.map(story => story.score))}`
+    : 'N/A';
 
   const handleSelectStory = (storyId: string) => {
     setSelectedStories(prev => 
       prev.includes(storyId) 
         ? prev.filter(id => id !== storyId)
-        : [...prev, storyId]
+        : prev.length >= formData.max_stories
+          ? prev
+          : [...prev, storyId]
     );
   };
 
@@ -205,16 +227,11 @@ const NewsletterCreate: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Selected stories:</span>
-                  <span className="font-medium">{selectedStories.length}</span>
+                  <span className="font-medium">{selectedStoryObjects.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Score range:</span>
-                  <span className="font-medium">
-                    {selectedStories.length > 0 
-                      ? `${Math.min(...selectedStories.map(id => filteredStories.find(s => s.id === id)?.score || 0))}-${Math.max(...selectedStories.map(id => filteredStories.find(s => s.id === id)?.score || 0))}`
-                      : 'N/A'
-                    }
-                  </span>
+                  <span className="font-medium">{scoreRange}</span>
                 </div>
               </div>
             </div>
@@ -222,7 +239,7 @@ const NewsletterCreate: React.FC = () => {
             {/* Generate Button */}
             <button
               onClick={handleGenerateNewsletter}
-              disabled={selectedStories.length === 0 || isGenerating}
+              disabled={selectedStoryObjects.length === 0 || isGenerating}
               className="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
@@ -266,7 +283,7 @@ const NewsletterCreate: React.FC = () => {
               <div className="bg-white shadow rounded-lg">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-lg font-medium text-gray-900">
-                    Select Stories ({selectedStories.length} selected)
+                    Select Stories ({selectedStoryObjects.length} selected)
                   </h2>
                 </div>
                 <div className="p-6">

@@ -7,6 +7,8 @@ from urllib.parse import urljoin, urlparse
 import hashlib
 import logging
 
+from services.source_config import source_config
+
 logger = logging.getLogger(__name__)
 
 class NewsSource:
@@ -158,6 +160,16 @@ NEWS_SOURCES = {
     )
 }
 
+# Register any custom sources persisted via configuration
+for domain, custom in source_config.get_custom_sources().items():
+    if domain not in NEWS_SOURCES:
+        NEWS_SOURCES[domain] = NewsSource(
+            domain=domain,
+            name=custom.get('name', domain),
+            rss_urls=custom.get('rss_urls', []),
+            fallback_urls=custom.get('fallback_urls', [])
+        )
+
 class SourceAdapter:
     """Base class for domain-specific content extraction"""
     
@@ -215,10 +227,9 @@ class NewsCrawler:
         self.cutoff_date = datetime.now() - timedelta(days=days_back)
         
     def get_configured_sources(self) -> List[str]:
-        """Get list of configured source domains from environment"""
-        from services.config import settings
-        run_sources = getattr(settings, 'run_sources', 'openai.com,anthropic.com,microsoft.com,google.com,meta.com')
-        return [source.strip() for source in run_sources.split(',')]
+        """Get list of active source domains from configuration"""
+        active_sources = source_config.get_active_sources()
+        return [domain for domain in active_sources if domain in NEWS_SOURCES]
         
     def crawl_sources(self, source_domains: List[str]) -> List[Dict]:
         """Crawl multiple news sources and return raw stories"""

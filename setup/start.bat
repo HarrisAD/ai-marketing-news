@@ -1,4 +1,6 @@
 @echo off
+setlocal
+cd /d "%~dp0.."
 echo ============================================
 echo   Starting AI Marketing News System
 echo ============================================
@@ -24,12 +26,12 @@ if not errorlevel 1 (
 )
 
 echo Starting backend server...
-start "AI News Backend" cmd /k "cd backend\src && python -m uvicorn main:app --host 0.0.0.0 --port 8000"
+start "AI News Backend" cmd /k "cd /d %cd%\backend\src && python -m uvicorn main:app --host 0.0.0.0 --port 8000"
 
 timeout /t 3 /nobreak > nul
 
 echo Starting frontend server...
-start "AI News Frontend" cmd /k "cd frontend && npm run dev"
+start "AI News Frontend" cmd /k "cd /d %cd%\frontend && npm run dev"
 
 timeout /t 5 /nobreak > nul
 

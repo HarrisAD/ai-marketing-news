@@ -2,9 +2,12 @@
 
 # Start the AI Marketing News Frontend
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
 echo "🚀 Starting AI Marketing News Frontend..."
 
-cd frontend
+cd "$PROJECT_ROOT/frontend"
 
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then

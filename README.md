@@ -2,37 +2,21 @@
 
 An automated AI news monitoring and newsletter generation system designed specifically for marketers.
 
-## 🎯 **For Non-Technical Users** 
+## 🎯 Quick Start (No Git Required)
 
-### 📥 **Super Simple Setup - No GitHub Account Needed!**
+1. **[Download the ZIP](https://github.com/HarrisAD/ai-marketing-news/archive/refs/heads/main.zip)**
+2. **Extract the archive** and open the new folder
+3. **Open the `setup/` folder**
+4. **Run** `setup.bat` (Windows), `Mac-Setup.command` (macOS), or `./setup.sh` (Linux)
+5. **Add your OpenAI API key** (edit `backend/.env` or paste it into the dashboard's OpenAI card)
+6. **Launch** with `setup/start.bat` (Windows) or `./setup/start.sh`
 
-1. **[Download ZIP File](https://github.com/HarrisAD/ai-marketing-news/archive/refs/heads/main.zip)** 
-2. **Install Python & Node.js** (links in guide)
-3. **Double-click setup script**
-4. **Add your OpenAI API key**  
-5. **Done!** Your AI news system runs locally
-
-**[📖 Complete Non-Technical Guide →](./EASY-SETUP.md)**
-
----
-
-## 🚀 **For Developers - Cloud Deployment**
-
-**Railway Deployment (3 minutes):**
-
-1. **Sign up at [Railway.app](https://railway.app)** (free account)
-2. **Click "New Project"** → **"Deploy from GitHub repo"**
-3. **Connect GitHub** and select: `HarrisAD/ai-marketing-news`
-4. **Add environment variable**: `OPENAI_API_KEY` = your OpenAI API key
-5. **Deploy!** Wait 3-5 minutes for build completion
-
-**Cost:** FREE on Railway (within $5/month credit) + OpenAI usage (~$5-20/month)
-
-[📖 **Technical Deployment Guide**](./DEPLOY.md)
+Need a step-by-step walkthrough with screenshots? **[Read the Easy Setup Guide →](./setup/EASY-SETUP.md)**
+Prefer a slightly more technical checklist? See **[Getting Started](./setup/GETTING_STARTED.md)**.
 
 ---
 
-## 🚀 Local Development Setup
+## 🚀 Developer Setup (Git Clone)
 
 ### Prerequisites
 - **Python 3.8+** 
@@ -120,6 +104,7 @@ ai-marketing-news/
 │   │   ├── services/       # API client
 │   │   └── types/          # TypeScript definitions
 │   └── package.json        # Node.js dependencies
+├── setup/                  # Setup scripts, launchers, and guides
 └── docs/                   # Documentation
 ```
 
@@ -142,23 +127,9 @@ MIN_SCORE_DEFAULT=60
 TIMEZONE=Europe/London
 CRAWLER_DAYS_BACK=7
 MAX_STORIES_PER_SOURCE=20
-RUN_SOURCES=openai.com,anthropic.com,microsoft.com,google.com,meta.com
 ```
 
-### News Sources (Built-in)
-
-**Major AI Companies:**
-- OpenAI, Anthropic, Microsoft AI, Google AI, Meta AI
-- Perplexity, Claude, GPT updates
-
-**Marketing & Tech Publications:**
-- Marketing AI Institute, MIT Technology Review
-- The Economist Technology, Forbes AI
-- Fortune AI, One Useful Thing
-
-**Academic & Research:**
-- Research papers and announcements
-- Industry trend analysis
+**Tip:** Active news sources and any custom sources you add are stored in `backend/src/data/source_config.json`. You can manage them directly from the dashboard under **Monitored News Sources**.
 
 ## 🛠️ API Reference
 
