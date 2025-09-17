@@ -70,7 +70,11 @@ class DeduplicationService:
         story_hashes = []
         for story in stories:
             content_text = self._extract_content_for_hashing(story)
-            simhash_value = Simhash(content_text)
+            try:
+                simhash_value = Simhash(content_text)
+            except Exception as exc:  # pragma: no cover - defensive fallback
+                logger.warning(f"Simhash calculation failed for story '{story.get('title', 'Unknown')}': {exc}")
+                simhash_value = None
             story_hashes.append((story, simhash_value))
         
         # Group similar stories
@@ -103,6 +107,9 @@ class DeduplicationService:
                            hash1: Simhash, hash2: Simhash) -> bool:
         """Determine if two stories are similar enough to be considered duplicates"""
         
+        # If either hash missing, skip simhash comparison
+        if hash1 is None or hash2 is None:
+            return False
         # First check: content similarity using simhash
         hamming_distance = hash1.distance(hash2)
         if hamming_distance > self.similarity_threshold:
