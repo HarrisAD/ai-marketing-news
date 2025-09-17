@@ -30,7 +30,26 @@ class TextStore:
             return 0
         
         existing_ids = set(self.get_all_story_ids())
-        new_stories = [s for s in stories if s['id'] not in existing_ids]
+        existing_urls = set(self.get_all_canonical_urls())
+        new_stories = []
+
+        for story in stories:
+            story_id = story.get('id')
+            canonical_url = story.get('canonical_url')
+
+            if story_id in existing_ids:
+                logger.info(f"Skipping existing story by ID: {story_id}")
+                continue
+
+            if canonical_url and canonical_url in existing_urls:
+                logger.info(f"Skipping duplicate story by URL: {canonical_url}")
+                continue
+
+            new_stories.append(story)
+            if story_id:
+                existing_ids.add(story_id)
+            if canonical_url:
+                existing_urls.add(canonical_url)
         
         if not new_stories:
             logger.info("No new stories to save")
@@ -192,6 +211,84 @@ class TextStore:
             logger.error(f"Failed to load story IDs: {e}")
         
         return ids
+
+    def get_all_canonical_urls(self) -> List[str]:
+        """Get all canonical URLs for duplicate checking."""
+        urls = []
+
+        try:
+            if not self.stories_file.exists():
+                return urls
+
+            with open(self.stories_file, 'r', encoding='utf-8') as f:
+                portalocker.lock(f, portalocker.LOCK_SH)
+
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+
+                    try:
+                        story = json.loads(line)
+                        canonical_url = story.get('canonical_url')
+                        if canonical_url:
+                            urls.append(canonical_url)
+                    except json.JSONDecodeError:
+                        continue
+
+                portalocker.unlock(f)
+
+        except Exception as e:
+            logger.error(f"Failed to load story URLs: {e}")
+
+        return urls
+
+    def delete_stories(self, story_ids: List[str] = None) -> int:
+        """Delete specific stories or clear all stories."""
+        if not self.stories_file.exists():
+            return 0
+
+        try:
+            if not story_ids:
+                # Delete all stories
+                with open(self.stories_file, 'r', encoding='utf-8') as f:
+                    count = sum(1 for _ in f if _.strip())
+                self.stories_file.unlink(missing_ok=True)
+                self.stories_file.touch()
+                return count
+
+            story_ids_set = set(story_ids)
+            kept_lines = []
+            deleted_count = 0
+
+            with open(self.stories_file, 'r', encoding='utf-8') as f:
+                portalocker.lock(f, portalocker.LOCK_SH)
+                for line in f:
+                    raw_line = line.strip()
+                    if not raw_line:
+                        continue
+                    try:
+                        story = json.loads(raw_line)
+                    except json.JSONDecodeError:
+                        continue
+
+                    if story.get('id') in story_ids_set:
+                        deleted_count += 1
+                    else:
+                        kept_lines.append(raw_line)
+                portalocker.unlock(f)
+
+            with open(self.stories_file, 'w', encoding='utf-8') as f:
+                portalocker.lock(f, portalocker.LOCK_EX)
+                for line in kept_lines:
+                    f.write(line + '\n')
+                portalocker.unlock(f)
+
+            return deleted_count
+
+        except Exception as e:
+            logger.error(f"Failed to delete stories: {e}")
+            return 0
     
     def update_story(self, story_id: str, updates: Dict) -> bool:
         """Update a specific story (useful for deduplication)"""

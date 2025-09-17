@@ -37,7 +37,9 @@ class CrawlerService:
         
         # Use configured sources if none specified
         if source_domains is None:
-            source_domains = settings.source_list
+            source_domains = source_config.get_active_sources()
+            if not source_domains:
+                source_domains = settings.source_list
         
         try:
             # Step 1: Crawl news sources
@@ -322,6 +324,11 @@ class CrawlerService:
         """Get list of available story tags"""
         from models.story import StoryTag
         return [tag.value for tag in StoryTag]
+
+    def delete_stories(self, story_ids: List[str] = None) -> int:
+        """Delete specific stories or clear the entire collection."""
+        deleted = self.storage.delete_stories(story_ids)
+        return deleted
 
     def _get_llm_service(self) -> LLMService:
         """Return an LLM service instance, refreshing if the API key changed."""

@@ -9,6 +9,9 @@ const Stories: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -65,6 +68,33 @@ const Stories: React.FC = () => {
     });
   };
 
+  const deleteStories = async (storyIds?: string[]) => {
+    setIsDeleting(true);
+    setActionError(null);
+    try {
+      const result = await storiesApi.deleteStories(storyIds);
+      setActionMessage(result.deleted ? `Deleted ${result.deleted} stories.` : 'No stories deleted.');
+      setSelectedStories([]);
+      await refetch();
+    } catch (err: any) {
+      setActionError('Failed to delete stories.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!selectedStories.length) return;
+    if (!window.confirm(`Delete ${selectedStories.length} selected stories?`)) return;
+    await deleteStories(selectedStories);
+  };
+
+  const handleClearAllStories = async () => {
+    if (!storiesData?.stories.length) return;
+    if (!window.confirm('Delete all stories? This cannot be undone.')) return;
+    await deleteStories();
+  };
+
   if (error) {
     return (
       <div className="px-4 sm:px-6 lg:px-8">
@@ -114,6 +144,12 @@ const Stories: React.FC = () => {
           )}
         </div>
       </div>
+
+      {(actionMessage || actionError) && (
+        <div className={`mt-4 rounded-md p-4 ${actionError ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+          {actionError || actionMessage}
+        </div>
+      )}
 
       {/* Filters */}
       {showFilters && (
@@ -219,11 +255,11 @@ const Stories: React.FC = () => {
           <>
             {/* Selection header */}
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={handleSelectAll}
-                  className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
-                >
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleSelectAll}
+                className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+              >
                   <div className={`w-4 h-4 border border-gray-300 rounded mr-2 flex items-center justify-center ${
                     selectedStories.length === storiesData?.stories.length ? 'bg-blue-600 border-blue-600' : ''
                   }`}>
@@ -241,7 +277,29 @@ const Stories: React.FC = () => {
               </div>
 
               <div className="text-sm text-gray-500">
-                Showing {storiesData.stories.length} stories
+                <div className="flex items-center space-x-3">
+                  <span>Showing {storiesData.stories.length} stories</span>
+                  {storiesData.stories.length > 0 && (
+                    <>
+                      <button
+                        onClick={handleClearAllStories}
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? 'Deleting...' : 'Clear All'}
+                      </button>
+                      {selectedStories.length > 0 && (
+                        <button
+                          onClick={handleDeleteSelected}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          disabled={isDeleting}
+                        >
+                          {isDeleting ? 'Deleting...' : 'Delete Selected'}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 

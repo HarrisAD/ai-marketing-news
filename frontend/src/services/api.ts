@@ -65,6 +65,13 @@ export const storiesApi = {
     const response = await api.post('/config/openai', { api_key: apiKey });
     return response.data;
   },
+
+  deleteStories: async (storyIds?: string[]): Promise<{ deleted: number }> => {
+    const response = await api.post('/stories/delete', {
+      story_ids: storyIds && storyIds.length ? storyIds : [],
+    });
+    return response.data;
+  },
 };
 
 // Newsletters API

@@ -31,6 +31,10 @@ class SourceCreateRequest(BaseModel):
     activate: bool = True
 
 
+class StoriesDeleteRequest(BaseModel):
+    story_ids: List[str] = []
+
+
 def _run_refresh_task():
     """Run the full update and track status for background execution."""
     try:
@@ -236,6 +240,20 @@ async def add_source(request: SourceCreateRequest):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.post("/stories/delete")
+async def delete_stories(request: StoriesDeleteRequest):
+    """Delete selected stories or clear all stories when none provided."""
+    try:
+        story_ids = request.story_ids or None
+        deleted = crawler_service.delete_stories(story_ids)
+        return {
+            "success": True,
+            "deleted": deleted
+        }
+    except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
 @router.get("/tags")
