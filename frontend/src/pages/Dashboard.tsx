@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { Link } from 'react-router-dom';
 import { 
@@ -68,6 +68,39 @@ const Dashboard: React.FC = () => {
     storiesApi.getOpenAIConfig,
     { refetchOnWindowFocus: false }
   );
+
+  const { data: refreshStatus } = useQuery(
+    'refresh-status',
+    storiesApi.getRefreshStatus,
+    { refetchInterval: 5000 }
+  );
+
+  const lastResultRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    setIsRefreshing(refreshStatus?.refreshing ?? false);
+  }, [refreshStatus?.refreshing]);
+
+  useEffect(() => {
+    const result = refreshStatus?.last_result;
+    if (!result) {
+      return;
+    }
+    const timestamp = result.timestamp || result?.duration_seconds?.toString();
+    if (!timestamp || lastResultRef.current === timestamp) {
+      return;
+    }
+    lastResultRef.current = timestamp;
+
+    if (result.success) {
+      const saved = result.stories_saved ?? result.stories_scored ?? 0;
+      setRefreshSuccessMessage(`Stories refreshed: ${saved} saved.`);
+      setRefreshError(null);
+      queryClient.invalidateQueries('stories');
+    } else {
+      setRefreshError(result.error || 'Stories refresh failed.');
+    }
+  }, [refreshStatus?.last_result, queryClient]);
 
   const stats = statsData?.stats;
 
@@ -652,6 +685,53 @@ const Dashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {refreshStatus?.refreshing && (
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="h-3 w-3 rounded-full bg-blue-500 animate-pulse"></div>
+              <span className="text-sm font-medium text-blue-800">Refreshing stories…</span>
+            </div>
+            <span className="text-xs text-blue-700 capitalize">
+              {(() => {
+                const stage = refreshStatus?.progress?.stage || 'starting';
+                const meta = refreshStatus?.progress?.meta || {};
+                switch (stage) {
+                  case 'start':
+                    return 'Preparing';
+                  case 'crawled':
+                    return `Fetched ${meta.count || 0} stories`;
+                  case 'scoring':
+                    return `Scoring ${meta.current || 0}/${meta.total || '?'}`;
+                  case 'scoring_complete':
+                    return `Scored ${meta.count || 0} stories`;
+                  case 'deduplicating':
+                    return 'Deduplicating';
+                  case 'saving':
+                    return `Saving ${meta.saved_count || 0} stories`;
+                  default:
+                    return 'Working…';
+                }
+              })()}
+            </span>
+          </div>
+          <div className="mt-3 h-2 bg-blue-200 rounded">
+            <div
+              className="h-2 bg-blue-500 rounded"
+              style={{
+                width: `${(() => {
+                  const stages = ['start', 'crawled', 'scoring', 'scoring_complete', 'deduplicating', 'saving'];
+                  const stage = refreshStatus?.progress?.stage;
+                  const index = stages.indexOf(stage);
+                  if (index === -1) return 15;
+                  return Math.min(95, Math.max(15, ((index + 1) / (stages.length + 1)) * 100));
+                })()}%`,
+              }}
+            ></div>
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="mt-8">

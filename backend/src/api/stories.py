@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 _refresh_lock = threading.Lock()
 _refresh_state = {
     "running": False,
-    "last_result": None
+    "last_result": None,
+    "started_at": None,
+    "progress": None
 }
 
 
@@ -38,7 +40,14 @@ class StoriesDeleteRequest(BaseModel):
 def _run_refresh_task():
     """Run the full update and track status for background execution."""
     try:
-        result = crawler_service.run_full_update()
+        def _progress(stage: str, meta: dict = None):
+            with _refresh_lock:
+                _refresh_state["progress"] = {
+                    "stage": stage,
+                    "meta": meta or {},
+                }
+
+        result = crawler_service.run_full_update(progress_callback=_progress)
         _refresh_state["last_result"] = result
         if result.get("success"):
             logger.info("Stories refresh completed in background")
@@ -53,6 +62,7 @@ def _run_refresh_task():
     finally:
         with _refresh_lock:
             _refresh_state["running"] = False
+            _refresh_state["progress"] = {"stage": "complete", "meta": {}}
 
 def _parse_date_param(value: Optional[str], end_of_day: bool = False) -> Optional[datetime]:
     """Parse YYYY-MM-DD or ISO datetime strings into datetime objects."""
@@ -145,6 +155,8 @@ async def refresh_stories(background_tasks: BackgroundTasks):
                 "last_result": _refresh_state.get("last_result")
             }
         _refresh_state["running"] = True
+        _refresh_state["started_at"] = datetime.now().isoformat()
+        _refresh_state["progress"] = {"stage": "starting", "meta": {}}
 
     background_tasks.add_task(_run_refresh_task)
     return {
@@ -153,6 +165,17 @@ async def refresh_stories(background_tasks: BackgroundTasks):
         "is_background": True,
         "refreshing": True
     }
+
+
+@router.get("/refresh/status")
+async def refresh_status():
+    with _refresh_lock:
+        return {
+            "refreshing": _refresh_state["running"],
+            "last_result": _refresh_state.get("last_result"),
+            "started_at": _refresh_state.get("started_at"),
+            "progress": _refresh_state.get("progress")
+        }
 
 @router.get("/sources")
 async def get_available_sources():

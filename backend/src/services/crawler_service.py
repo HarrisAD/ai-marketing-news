@@ -23,7 +23,7 @@ class CrawlerService:
         self.storage = TextStore()
         self.deduplication_service = DeduplicationService()
     
-    def run_full_update(self, source_domains: List[str] = None) -> Dict:
+    def run_full_update(self, source_domains: List[str] = None, progress_callback=None) -> Dict:
         """
         Run the complete news update process:
         1. Crawl news sources
@@ -40,11 +40,17 @@ class CrawlerService:
             source_domains = source_config.get_active_sources()
             if not source_domains:
                 source_domains = settings.source_list
+
+        if progress_callback:
+            progress_callback('start', {'sources': source_domains})
         
         try:
             # Step 1: Crawl news sources
             logger.info(f"📰 Crawling {len(source_domains)} news sources...")
             raw_stories = self.news_crawler.crawl_sources(source_domains)
+
+            if progress_callback:
+                progress_callback('crawled', {'count': len(raw_stories)})
             
             if not raw_stories:
                 logger.warning("No stories found from any source")
@@ -62,9 +68,12 @@ class CrawlerService:
             # Step 2: Score stories with LLM
             logger.info("🤖 Scoring stories with LLM...")
             scored_stories = []
+            total_stories = len(raw_stories)
             
             for i, story in enumerate(raw_stories, 1):
                 try:
+                    if progress_callback:
+                        progress_callback('scoring', {'current': i, 'total': total_stories})
                     # Skip stories that already have scores (avoid re-scoring)
                     if story.get('score') is not None:
                         logger.info(f"Story {i}/{len(raw_stories)} already scored: {story.get('title', 'Unknown')[:50]}...")
@@ -101,16 +110,24 @@ class CrawlerService:
                         })
                         scored_stories.append(story)
             
+            if progress_callback:
+                progress_callback('scoring_complete', {'count': len(scored_stories)})
+
             logger.info(f"✅ Scored {len(scored_stories)} stories")
             
             # Step 3: Deduplicate stories
             logger.info("🔍 Deduplicating stories...")
+            if progress_callback:
+                progress_callback('deduplicating', {'count': len(scored_stories)})
             deduplicated_stories = self.deduplication_service.deduplicate_stories(scored_stories)
             logger.info(f"✅ Deduplication complete")
             
             # Step 4: Save to storage
             logger.info("💾 Saving stories to storage...")
             saved_count = self.storage.save_stories(deduplicated_stories)
+
+            if progress_callback:
+                progress_callback('saving', {'saved_count': saved_count})
             
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
@@ -126,6 +143,11 @@ class CrawlerService:
             }
             
             logger.info(f"🎉 Update complete! Saved {saved_count} new stories in {duration:.1f}s")
+            if progress_callback:
+                progress_callback('complete', {
+                    'saved_count': saved_count,
+                    'duration_seconds': duration
+                })
             return result
             
         except Exception as e:

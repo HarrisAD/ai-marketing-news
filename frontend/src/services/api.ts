@@ -72,6 +72,11 @@ export const storiesApi = {
     });
     return response.data;
   },
+
+  getRefreshStatus: async (): Promise<any> => {
+    const response = await api.get('/refresh/status');
+    return response.data;
+  },
 };
 
 // Newsletters API
